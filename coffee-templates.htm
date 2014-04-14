@@ -1,0 +1,42 @@
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.7.1/coffee-script.min.js"></script>
+<script src="https://rawgit.com/mikesmullin/coffee-templates/stable/js/coffee-templates.min.js"></script>
+
+<script type="text/coffeescript">
+
+#We could do it this way or...
+mustache_template = 
+"""
+{{each company, (name, data)}}
+    <h2>{{name}}</h2>
+        <ul>{{each data.people}}
+            <li>{{this}}</li>
+        {{/each}}</ul>{{/each}}
+"""
+
+###
+...this way which is the same as above without using markup
+###
+engine = new CoffeeTemplates format: true
+mustache_template = engine.render ->
+    block "each company, (name, data)", ->
+        h2 '{{name}}'
+        ul ->
+            block "each data.people", ->
+                li '{{this}}'
+
+template_fn = CoffeeTemplates.compile mustache_template
+
+window.each = (o, cb) ->
+  for k of o
+    cb.apply o[k], [k, o[k]]
+  return
+
+html = template_fn company:
+  goog: people: ['Larry Page', 'Sergey Brin']
+  msft: people: ['Bill Gates']
+  
+$ ->
+    $('body').html html
+    
+</script>
