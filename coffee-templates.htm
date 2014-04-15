@@ -2,7 +2,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.7.1/coffee-script.min.js"></script>
 <script src="https://rawgit.com/mikesmullin/coffee-templates/stable/js/coffee-templates.min.js"></script>
 
-<script type="text/coffeescript">
+<script type="text/coffeescript" id="template">
 
 #We could do it this way or...
 mustache_template = 
@@ -39,4 +39,8 @@ html = template_fn company:
 $ ->
     $('body').html html
     
+</script>
+
+<script type="text/coffeescript">
+console.log CoffeeScript.compile(document.all.template.text)
 </script>
