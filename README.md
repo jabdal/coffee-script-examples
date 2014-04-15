@@ -2,4 +2,6 @@ coffee-script-examples
 ======================
 
 
-https://rawgithub.com/jabdal/coffee-script-examples/master/coffee-templates.htm
+http://rawgithub.com/jabdal/coffee-script-examples/master/coffee-templates.htm
+
+http://rawgit.com/jabdal/coffee-script-examples/master/lexer.htm
