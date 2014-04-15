@@ -1,0 +1,88 @@
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.7.1/coffee-script.min.js"></script>
+<script src="http://rawgit.com/mikesmullin/coffee-templates/stable/js/coffee-templates.min.js"></script>
+<script src="http://rawgit.com/aaditmshah/lexer/master/lexer.js"></script>
+
+<script type="text/coffeescript" id="lexer">
+lexer = new Lexer
+
+lexer.addRule /\s+/, -> #ignore whitespace
+
+lexer.addRule /\#.*/, -> #ignore comments
+
+lexer.addRule /\d+/, (lexeme)-> 
+    @yytext = parseInt(lexeme)
+    "NUMBER"
+    
+lexer.addRule /push/, -> "PUSH"
+lexer.addRule /print/, -> "PRINT"
+lexer.addRule /add/, -> "ADD"
+lexer.addRule /sub/, -> "SUB"
+lexer.addRule /mul/, -> "MUL"
+lexer.addRule /div/, -> "DIV"
+    
+prog = """
+    push 123
+    push 123
+    add
+    print
+    
+    push 123
+    push 123
+    sub
+    print
+    
+    push 123
+    push 123
+    mul
+    print
+    
+    push 123
+    push 123
+    div
+    print
+"""
+
+lexer.setInput prog
+
+stack = []
+push = false
+
+while token = lexer.lex()
+    switch token
+        when "NUMBER"
+            if push 
+                stack.push(lexer.yytext)
+            else alert("Unexpected number.")
+            break
+        when "ADD"
+            if push
+                alert("Expected number.")
+            else stack.push(stack.pop() + stack.pop())
+            break
+        when "SUB"
+            if push
+                alert("Expected number.")
+            else stack.push(stack.pop() - stack.pop())
+            break 
+        when "MUL"
+            if push
+                alert("Expected number.")
+            else stack.push(stack.pop() * stack.pop())
+            break    
+        when "DIV"
+            if push
+                alert("Expected number.")
+            else stack.push(stack.pop() / stack.pop())
+            break 
+        when "PRINT"
+            if push 
+                alert("Expected number.")
+            else alert(stack.pop())
+            break
+    push = token is "PUSH"
+</script>
+
+<script type="text/coffeescript">
+console.log CoffeeScript.compile(document.all.lexer.text)
+</script>
