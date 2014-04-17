@@ -1,0 +1,2364 @@
+<canvas id="screen" width="512" height="512"/>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.7.1/coffee-script.min.js"></script>
+<script type="text/6502" id="asm">
+
+start:
+  ldx #0
+c:lda bottombar,x
+  cmp #$ff
+  beq init
+  sta $4e0,x
+  sta $5e0,x
+  inx
+  jmp c
+init:
+  jsr initDraw
+  lda #0
+  sta $10 ; scrptr
+  sta $11 ; txtptr
+loop:
+  jsr drawMain
+  jsr putfont
+  jsr scrollarea
+  jmp loop
+
+scrollarea:
+  ldx #0
+g:lda $521,x
+  sta $520,x
+  lda $541,x
+  sta $540,x
+  lda $561,x
+  sta $560,x
+  lda $581,x
+  sta $580,x
+  lda $5a1,x
+  sta $5a0,x
+  inx
+  cpx #31
+  bne g
+  rts
+
+putfont:
+  lda $10 ; scrptr
+  cmp #0
+  bne noNext
+  inc $11
+  ldx $11
+  lda scrolltext,x
+  tax
+  lda fontSize,x
+  sta $10
+noNext:
+  dec $10
+  ldx $11
+  lda scrolltext,x
+  cmp #$ff
+  bne notResetText
+  lda #0
+  sta $10
+  sta $11
+  rts
+
+notResetText:
+  asl
+  tax
+  lda fontlookup,x
+  sta $2
+  inx
+  lda fontlookup,x
+  sta $3
+  lda #<fonts
+  clc
+  adc $2
+  sta $0
+  lda #>fonts
+  adc $3
+  sta $1
+  ldy $10
+  lda ($00),y
+  sta $53f
+  tya
+  clc
+  adc #6
+  tay
+  lda ($00),y
+  sta $55f
+  tya
+  clc
+  adc #6
+  tay
+  lda ($00),y
+  sta $57f
+  tya
+  clc
+  adc #6
+  tay
+  lda ($00),y
+  sta $59f
+  tya
+  clc
+  adc #6
+  tay
+  lda ($00),y
+  sta $5bf
+  rts
+
+initDraw:
+  lda #<picture
+  sta $20
+  lda #>picture
+  sta $21
+  lda #$00
+  sta $22
+  lda #$02
+  sta $23
+  ldx #$0
+  rts
+drawMain:
+  ldx #0
+  lda ($20,x)
+  cmp #$ff
+  beq done
+  sta ($22,x)
+  inc $20
+  lda $20
+  cmp #$00
+  bne n1
+  inc $21
+n1:
+  inc $22
+  lda $22 
+  cmp #$00
+  bne done
+  lda $23
+  cmp #$05
+  beq done
+  inc $23
+done:
+  rts
+
+picture:
+  dcb 0,0,0,0,0,0,0,0,0,$b,$b,$c,$f,$f,$f,$f
+  dcb $f,$b,0,0,0,$b,$b,$c,$c,$f,$f,$b,0,0,0,0
+  dcb 0,0,0,0,0,0,0,0,0,$b,$c,$c,$f,$c,$f,$f
+  dcb $b,$b,$b,$b,$b,0,$b,$b,$c,$f,$f,$c,0,0,0,0
+  dcb 0,0,0,0,0,0,0,$b,0,$c,$b,$f,$c,$f,$f,$c
+  dcb $c,$b,0,$b,$c,$c,$c,$f,$f,1,$f,$c,$b,0,0,0
+  dcb 0,0,0,0,0,0,0,0,$b,$b,$c,$c,$c,$f,$f,$f
+  dcb $c,$c,$c,$c,$c,$c,$f,$c,$f,$f,$f,$f,$b,0,0,0
+  dcb 0,0,0,0,0,0,0,$b,0,0,$b,$c,$c,$f,$f,$f
+  dcb $f,$c,$f,$f,$f,$f,$f,$f,$f,1,$f,$f,$c,0,0,0
+  dcb 0,0,0,0,0,0,0,0,0,$b,$b,$b,$c,$f,$f,1
+  dcb $f,$f,$c,$f,$f,$f,1,$f,$f,$f,$f,$f,$f,0,0,0
+  dcb 0,0,0,0,0,0,0,0,0,$b,$b,$b,$b,$c,$f,1
+  dcb $f,$f,$f,$f,$f,$f,$f,$f,1,$f,$f,$f,$f,$b,0,0
+  dcb 0,0,0,0,0,0,0,0,$b,0,$b,$c,$b,$c,$c,1
+  dcb 1,$f,1,$f,1,$f,1,$f,$f,1,$f,$f,1,$b,0,0
+  dcb 0,0,0,0,0,0,0,$b,$b,$b,$c,$c,$b,$c,$f,1
+  dcb 1,1,$f,$f,1,$f,$f,1,$f,$f,$f,$f,1,$c,0,0
+  dcb 0,0,0,0,0,0,0,$b,$b,$c,$c,$c,$b,$c,$c,$f
+  dcb 1,1,1,$f,$f,1,$f,1,$f,1,$f,$f,1,$c,0,0
+  dcb 0,0,0,0,0,$b,$b,$b,$c,$c,$c,$f,$c,$c,$f,$f
+  dcb 1,1,1,1,$f,$f,$f,1,$f,1,$f,$f,$f,$f,0,0
+  dcb 0,0,0,0,0,0,$b,$c,$c,$c,$f,$c,$f,$c,$f,$f
+  dcb 1,1,1,1,1,$f,$f,1,$f,$f,$f,$f,1,$f,$b,0
+  dcb 0,0,0,0,$b,$b,$b,$c,$c,$f,$c,$f,$f,$c,$f,$f
+  dcb 1,1,1,1,1,$f,$f,$f,1,$f,$f,$f,1,$c,$b,$b
+  dcb 0,0,0,0,$b,$b,$c,$f,$c,$f,$f,$f,$f,$f,$c,$f
+  dcb 1,1,1,1,1,$f,$f,$f,1,$f,$f,$f,$f,$f,$b,$b
+  dcb 0,0,0,0,$b,$c,$c,$c,$f,$f,$f,$f,$f,$f,$f,$f
+  dcb $f,1,1,1,$f,$b,$f,$f,$f,1,$f,$f,$f,$f,$b,$b
+  dcb 0,0,0,0,$b,$c,$c,$f,$c,$f,$f,$f,$f,$f,$f,$f
+  dcb $f,$f,$f,$c,$b,$f,$f,1,$f,$f,$f,$f,$f,$f,$c,$b
+  dcb 0,0,0,0,$b,$b,$c,$c,$f,$c,$f,$f,$f,$f,$f,$f
+  dcb $c,$c,$b,$c,$c,$f,$f,1,$c,$c,$f,$f,$f,$f,$c,$b
+  dcb 0,0,0,0,$b,$b,$c,$c,$c,$f,$f,$f,$f,$f,$f,$f
+  dcb $f,$f,$f,$f,$f,1,$f,$c,$b,$f,$c,$f,$c,$f,$c,$b
+  dcb 0,0,0,0,0,$b,$c,$c,$c,$c,$f,$f,$f,$f,$f,$f
+  dcb $f,$f,$f,$f,$f,$c,$b,$c,$c,$c,$f,$f,$c,$f,$c,$c
+  dcb 0,0,0,0,0,$b,$b,$c,$c,$c,$c,$c,$f,$f,$f,$f
+  dcb $f,$f,$f,$c,$b,$b,$c,$c,$c,$f,$c,$f,$f,$f,$c,$b
+  dcb 0,0,0,0,0,$b,$b,$b,$b,$c,$c,$f,$c,$f,$f,$f
+  dcb $c,$c,$b,$b,$b,$c,$b,$b,$c,$c,$f,$c,$c,$f,$c,$c
+  dcb 0,0,0,0,0,0,$b,$b,$c,$b,$c,$c,$c,$c,$c,$c
+  dcb $b,$b,$b,$b,$c,$b,$b,$c,$c,$f,$f,$f,$c,$c,$c,$b
+  dcb 0,0,0,0,0,0,0,0,$b,$b,$b,$c,$c,$c,$c,$c
+  dcb $c,$c,$b,$b,$b,$b,$c,$c,$f,$f,$f,$c,$c,$c,$c,$c
+  dcb $ff
+
+
+fontSize:
+  dcb 5,5,5,5,5,5,5,5 ;abcdefgh
+  dcb 2,5,5,5,6,6,5,5 ;ijklmnop
+  dcb 6,5,5,4,5,6,6,6 ;qrstuvwx
+  dcb 6,5,2,3         ;yz.[SPACE]
+
+;
+; a=0, b=1, c=2, d=3....
+;
+
+scrolltext:
+  dcb 0
+
+  dcb 14,13,11,24,27           ; "only "
+  dcb 03,04,15,19,07,27        ; "depth "
+  dcb 12,0,10,4,18,27          ; "makes "
+  dcb 8,19,27                  ; "it "
+  dcb 15,14,18,18,8,1,11,4     ; "possible"
+  dcb 26,26,26                 ; "..."
+  dcb 19,7,8,18,27             ; "this "
+  dcb 8,18,27                  ; "is "
+  dcb 19,7,4,27                ; "the "
+  dcb 5,8,17,18,19,27          ; "first "
+  dcb 3,4,12,14,27             ; "demo "
+  dcb 12,0,3,4,27              ; "made "
+  dcb 8,13,27                  ; "in "
+  dcb 19,7,8,18,27             ; "this "
+  dcb 4,13,21,26,26,26,26,27   ; "env.... "
+  dcb 7,14,15,4,27             ; "hope "
+  dcb 24,14,20,27              ; "you "
+  dcb 11,8,10,4,27             ; "like "
+  dcb 8,19,26,26,26,27,27      ; "it...  "
+  dcb 22,22,22,26              ; "www."
+  dcb 3,4,15,19,7,26           ; "depth."
+  dcb 14,17,6,27,27,27,27,27   ; "org     "
+
+  dcb $ff                      ; end of text
+
+fontlookup:
+  dcb $00,$00 ;a
+  dcb $20,$00 ;b
+  dcb $40,$00 ;c
+  dcb $60,$00 ;d
+  dcb $80,$00 ;e
+  dcb $a0,$00 ;f
+  dcb $c0,$00 ;g
+  dcb $e0,$00 ;h
+  dcb $00,$01 ;i
+  dcb $20,$01 ;j
+  dcb $40,$01 ;k
+  dcb $60,$01 ;l
+  dcb $80,$01 ;m
+  dcb $a0,$01 ;n
+  dcb $c0,$01 ;o
+  dcb $e0,$01 ;p
+  dcb $00,$02 ;q
+  dcb $20,$02 ;r
+  dcb $40,$02 ;s
+  dcb $60,$02 ;t
+  dcb $80,$02 ;u
+  dcb $a0,$02 ;v
+  dcb $c0,$02 ;w
+  dcb $e0,$02 ;x
+  dcb $00,$03 ;y
+  dcb $20,$03 ;z
+  dcb $40,$03 ;.
+  dcb $60,$03 ;" "
+
+fonts:
+  dcb 0,1,1,0,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,0
+
+  dcb 0,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0
+
+  dcb 0,1,1,0,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,0,0,0
+  dcb 0,0
+
+  dcb 0,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0
+
+  dcb 1,1,1,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 1,1,1,1,0,0
+  dcb 0,0
+
+  dcb 1,1,1,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0
+
+  dcb 1,1,1,0,0,0
+  dcb 0,0,0,1,0,0
+  dcb 1,1,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,1,1,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,0
+
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,1,0,0
+  dcb 0,1,0,1,0,0
+  dcb 0,0,1,1,0,0
+  dcb 0,1,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,0
+
+  dcb 0,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 1,1,1,1,0,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 1,1,0,1,1,0
+  dcb 1,0,1,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 1,0,0,1,1,0
+  dcb 1,0,1,0,1,0
+  dcb 1,1,0,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 0,0
+
+  dcb 0,1,1,0,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,0,0,0
+  dcb 0,0
+
+  dcb 0,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,0
+
+  dcb 0,1,1,0,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,0,1,0,0
+  dcb 1,0,1,0,0,0
+  dcb 0,0
+
+  dcb 0,1,1,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,1,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 0,0
+
+  dcb 1,1,1,0,0,0
+  dcb 0,0,0,1,0,0
+  dcb 0,1,1,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 0,1,1,1,0,0
+  dcb 0,0
+
+  dcb 1,1,1,0,0,0
+  dcb 0,1,0,0,0,0
+  dcb 0,1,0,0,0,0
+  dcb 0,1,0,0,0,0
+  dcb 0,1,0,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,0,0,1,0,0
+  dcb 1,1,1,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 0,1,0,1,0,0
+  dcb 0,0,1,0,0,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 1,0,0,0,1,0
+  dcb 1,0,1,0,1,0
+  dcb 1,1,0,1,1,0
+  dcb 1,0,0,0,1,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 0,1,0,1,0,0
+  dcb 0,0,1,0,0,0
+  dcb 0,1,0,1,0,0
+  dcb 1,0,0,0,1,0
+  dcb 0,0
+
+  dcb 1,0,0,0,1,0
+  dcb 0,1,0,1,0,0
+  dcb 0,0,1,0,0,0
+  dcb 0,0,1,0,0,0
+  dcb 0,0,1,0,0,0
+  dcb 0,0
+
+  dcb 1,1,1,1,0,0 ; z
+  dcb 1,0,0,0,0,0
+  dcb 0,1,1,0,0,0
+  dcb 0,0,0,1,0,0
+  dcb 1,1,1,1,0,0
+  dcb 0,0
+
+  dcb 0,0,0,0,0,0 ; .
+  dcb 0,0,0,0,0,0
+  dcb 0,0,0,0,0,0
+  dcb 0,0,0,0,0,0
+  dcb 1,0,0,0,0,0
+  dcb 0,0
+
+  dcb 0,0,0,0,0,0 ; " "
+  dcb 0,0,0,0,0,0
+  dcb 0,0,0,0,0,0
+  dcb 0,0,0,0,0,0
+  dcb 0,0,0,0,0,0
+  dcb 0,0
+
+bottombar:
+  dcb $b,$9,$b,9,8,9,8,$a,8,$a,7,$a,7,1,7,1,1
+  dcb 7,1,7,$a,7,$a,8,$a,8,9,8,9,$b,9,$b
+  dcb $ff
+
+
+</script>
+
+
+<script type="text/coffeescript" id="coffee">
+Opcodes = new Array(Array("ADC", 0x69, 0x65, 0x75, 0x00, 0x6d, 0x7d, 0x79, 0x61, 0x71, 0x00, 0x00), Array("AND", 0x29, 0x25, 0x35, 0x00, 0x2d, 0x3d, 0x39, 0x21, 0x31, 0x00, 0x00), Array("ASL", 0x00, 0x06, 0x16, 0x00, 0x0e, 0x1e, 0x00, 0x00, 0x00, 0x0a, 0x00), Array("BIT", 0x00, 0x24, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("BPL", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10), Array("BMI", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30), Array("BVC", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50), Array("BVS", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70), Array("BCC", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x90), Array("BCS", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb0), Array("BNE", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd0), Array("BEQ", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0), Array("CMP", 0xc9, 0xc5, 0xd5, 0x00, 0xcd, 0xdd, 0xd9, 0xc1, 0xd1, 0x00, 0x00), Array("CPX", 0xe0, 0xe4, 0x00, 0x00, 0xec, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("CPY", 0xc0, 0xc4, 0x00, 0x00, 0xcc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("DEC", 0x00, 0xc6, 0xd6, 0x00, 0xce, 0xde, 0x00, 0x00, 0x00, 0x00, 0x00), Array("EOR", 0x49, 0x45, 0x55, 0x00, 0x4d, 0x5d, 0x59, 0x41, 0x51, 0x00, 0x00), Array("CLC", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00), Array("SEC", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x00), Array("CLI", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x58, 0x00), Array("SEI", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x00), Array("CLV", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb8, 0x00), Array("CLD", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xd8, 0x00), Array("SED", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x00), Array("INC", 0x00, 0xe6, 0xf6, 0x00, 0xee, 0xfe, 0x00, 0x00, 0x00, 0x00, 0x00), Array("JMP", 0x00, 0x00, 0x00, 0x00, 0x4c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("JSR", 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("LDA", 0xa9, 0xa5, 0xb5, 0x00, 0xad, 0xbd, 0xb9, 0xa1, 0xb1, 0x00, 0x00), Array("LDX", 0xa2, 0xa6, 0x00, 0xb6, 0xae, 0x00, 0xbe, 0x00, 0x00, 0x00, 0x00), Array("LDY", 0xa0, 0xa4, 0xb4, 0x00, 0xac, 0xbc, 0x00, 0x00, 0x00, 0x00, 0x00), Array("LSR", 0x00, 0x46, 0x56, 0x00, 0x4e, 0x5e, 0x00, 0x00, 0x00, 0x4a, 0x00), Array("NOP", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xea, 0x00), Array("ORA", 0x09, 0x05, 0x15, 0x00, 0x0d, 0x1d, 0x19, 0x01, 0x11, 0x00, 0x00), Array("TAX", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xaa, 0x00), Array("TXA", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8a, 0x00), Array("DEX", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xca, 0x00), Array("INX", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe8, 0x00), Array("TAY", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa8, 0x00), Array("TYA", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x98, 0x00), Array("DEY", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x00), Array("INY", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc8, 0x00), Array("ROR", 0x00, 0x66, 0x76, 0x00, 0x6e, 0x7e, 0x00, 0x00, 0x00, 0x6a, 0x00), Array("ROL", 0x00, 0x26, 0x36, 0x00, 0x2e, 0x3e, 0x00, 0x00, 0x00, 0x2a, 0x00), Array("RTI", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00), Array("RTS", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x60, 0x00), Array("SBC", 0xe9, 0xe5, 0xf5, 0x00, 0xed, 0xfd, 0xf9, 0xe1, 0xf1, 0x00, 0x00), Array("STA", 0x00, 0x85, 0x95, 0x00, 0x8d, 0x9d, 0x99, 0x81, 0x91, 0x00, 0x00), Array("TXS", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9a, 0x00), Array("TSX", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xba, 0x00), Array("PHA", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x00), Array("PLA", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00), Array("PHP", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00), Array("PLP", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00), Array("STX", 0x00, 0x86, 0x00, 0x96, 0x8e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("STY", 0x00, 0x84, 0x94, 0x00, 0x8c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00), Array("---", 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))
+MAX_MEM = ((32*32)-1)
+regA = 0
+regX = 0
+regY = 0
+regP = 0
+myInterval = 0
+regPC = 0x600
+regSP = 0x100
+defaultCodePC = 0x600
+codeLen = 0
+memory = []
+labelIndex = []
+labelPtr = 0
+param = ""
+palette = [
+  "#000000", "#ffffff", "#880000", "#aaffee",
+  "#cc44cc", "#00cc55", "#0000aa", "#eeee77",
+  "#dd8855", "#664400", "#ff7777", "#333333",
+  "#777777", "#aaff66", "#0088ff", "#bbbbbb" ]
+screen = document.all.screen.getContext("2d")
+
+assemble = ->
+  reset()
+  code = document.all.asm.text+"\n\n"
+  lines = code.split("\n")
+  labelIndex = new Array()
+  labelPtr = 0
+  defaultCodePC = regPC = 0x600
+  xc = 0
+  while xc < lines.length
+    unless indexLabels(lines[xc])
+      console.log "Label already defined at line " + (xc + 1) + ": " + lines[xc]
+      return false
+    xc++
+  console.log labelIndex.length
+  defaultCodePC = regPC = 0x600
+  x = 0
+  while x < lines.length
+    unless assembleLine(lines[x], x)
+      #codeCompiledOK = false
+      break
+    x++
+  memory[defaultCodePC] = 0x00
+  return
+  
+  
+indexLabels = (input) ->
+  input = input.replace(new RegExp(/^(.*?);.*/), "$1")
+  input = input.replace(new RegExp(/^\s+/), "")
+  input = input.replace(new RegExp(/\s+$/), "")
+  thisPC = defaultCodePC
+  codeLen = 0
+  assembleLine input
+  regPC += codeLen
+  if input.match(new RegExp(/^\w+:/))
+    label = input.replace(new RegExp(/(^\w+):.*$/), "$1")
+    name = label + "|" + thisPC
+    return false  if findLabel(name)
+    labelIndex[labelPtr++] = name + "|"
+    true
+  true
+
+
+findLabel = (name) ->
+  m = 0
+  while m < labelIndex.length
+    nameAndAddr = labelIndex[m].split("|")
+    return true if name is nameAndAddr[0]
+    m++
+  false
+
+
+jumpBranch = (offset) ->
+  if offset > 0x7f
+    regPC = (regPC - (0x100 - offset))
+  else
+    regPC = (regPC + offset)
+  return
+  
+  
+DCB = (param) ->
+  values = param.split(",")
+  return false  if values.length is 0
+  v = 0
+  while v < values.length
+    str = values[v]
+    if str isnt `undefined` and str? and str.length > 0
+      ch = str.substring(0, 1)
+      if ch is "$"
+        number = parseInt(str.replace(/^\$/, ""), 16)
+        pushByte number
+      else if ch >= "0" and ch <= "9"
+        number = parseInt(str, 10)
+        pushByte number
+      else
+        return false
+    v++
+  true
+  
+  
+doCompare = (reg, val) ->
+  if reg >= val 
+    regP |= 1
+  else
+    regP &= 0xfe
+  val = (reg - val)
+  if val
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if val & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+
+
+assembleLine = (input, lineno) ->
+  input = input.replace(new RegExp(/^(.*?);.*/), "$1") # remove comments
+  input = input.replace(new RegExp(/^\s+/), "") # trim line
+  input = input.replace(new RegExp(/\s+$/), "") # trim line
+  # Find command or label
+  if input.match(new RegExp(/^\w+:/))
+    label = input.replace(new RegExp(/(^\w+):.*$/), "$1")
+    if input.match(new RegExp(/^\w+:[\s]*\w+.*$/))
+      input = input.replace(new RegExp(/^\w+:[\s]*(.*)$/), "$1")
+      command = input.replace(new RegExp(/^(\w+).*$/), "$1")
+    else
+      command = ""
+  else
+    command = input.replace(new RegExp(/^(\w+).*$/), "$1")
+  return true  if command is "" # Blank line?  Return.
+  command = command.toUpperCase()
+  if input.match(/^\*[\s]*=[\s]*[\$]?[0-9a-f]*$/)
+    param = input.replace(new RegExp(/^[\s]*\*[\s]*=[\s]*/), "") # equ spotted
+    if param[0] is "$"
+      param = param.replace(new RegExp(/^\$/), "")
+      addr = parseInt(param, 16)
+    else
+      addr = parseInt(param, 10)
+    if (addr < 0) or (addr > 0xffff)
+      console.log "Unable to relocate code outside 64k memory"
+      return false
+    defaultCodePC = addr
+    return true
+  if input.match(/^\w+\s+.*?$/)
+    param = input.replace(new RegExp(/^\w+\s+(.*?)/), "$1")
+  else
+    if input.match(/^\w+$/)
+      param = ""
+    else
+      return false
+  param = param.replace(/[ ]/g, "")
+  return DCB(param)  if command is "DCB"
+  o = 0
+  while o < Opcodes.length
+    if Opcodes[o][0] is command
+      return true  if checkSingle(param, Opcodes[o][10])
+      return true  if checkImmediate(param, Opcodes[o][1])
+      return true  if checkZeroPage(param, Opcodes[o][2])
+      return true  if checkZeroPageX(param, Opcodes[o][3])
+      return true  if checkZeroPageY(param, Opcodes[o][4])
+      return true  if checkAbsoluteX(param, Opcodes[o][6])
+      return true  if checkAbsoluteY(param, Opcodes[o][7])
+      return true  if checkIndirectX(param, Opcodes[o][8])
+      return true  if checkIndirectY(param, Opcodes[o][9])
+      return true  if checkAbsolute(param, Opcodes[o][5])
+      return true  if checkBranch(param, Opcodes[o][11])
+    o++
+  false # Unknown opcode
+
+
+checkBranch = (param, opcode) ->
+  return false  if opcode is 0x00
+  addr = -1
+  addr = getLabelPC(param)  if param.match(/\w+/)
+  if addr is -1
+    pushWord 0x00
+    return false
+  pushByte opcode
+  if addr < (defaultCodePC - 0x600) # Backwards?
+    pushByte (0xff - ((defaultCodePC - 0x600) - addr)) & 0xff
+    return true
+  pushByte (addr - (defaultCodePC - 0x600) - 1) & 0xff
+  true
+
+
+checkImmediate = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(new RegExp(/^#\$[0-9a-f]{1,2}$/i))
+    pushByte opcode
+    value = parseInt(param.replace(/^#\$/, ""), 16)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  if param.match(new RegExp(/^#[0-9]{1,3}$/i))
+    pushByte opcode
+    value = parseInt(param.replace(/^#/, ""), 10)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  
+  # Label lo/hi
+  if param.match(new RegExp(/^#[<>]\w+$/))
+    label = param.replace(new RegExp(/^#[<>](\w+)$/), "$1")
+    hilo = param.replace(new RegExp(/^#([<>]).*$/), "$1")
+    pushByte opcode
+    if findLabel(label)
+      addr = getLabelPC(label)
+      switch hilo
+        when ">"
+          pushByte (addr >> 8) & 0xff
+          return true
+        when "<"
+          pushByte addr & 0xff
+          return true
+        else
+          return false
+    else
+      pushByte 0x00
+      return true
+  false
+
+
+checkIndirectX = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\(\$[0-9a-f]{1,2},X\)$/i)
+    pushByte opcode
+    value = param.replace(new RegExp(/^\(\$([0-9a-f]{1,2}).*$/i), "$1")
+    return false  if value < 0 or value > 255
+    pushByte parseInt(value, 16)
+    return true
+  false
+
+
+checkIndirectY = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\(\$[0-9a-f]{1,2}\),Y$/i)
+    pushByte opcode
+    value = param.replace(new RegExp(/^\([\$]([0-9a-f]{1,2}).*$/i), "$1")
+    return false  if value < 0 or value > 255
+    pushByte parseInt(value, 16)
+    return true
+  false
+
+
+checkSingle = (param, opcode) ->
+  return false  if opcode is 0x00
+  return false  unless param is ""
+  pushByte opcode
+  true
+
+
+checkZeroPage = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\$[0-9a-f]{1,2}$/i)
+    pushByte opcode
+    value = parseInt(param.replace(/^\$/, ""), 16)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  if param.match(/^[0-9]{1,3}$/i)
+    pushByte opcode
+    value = parseInt(param, 10)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  false
+
+
+checkAbsoluteX = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\$[0-9a-f]{3,4},X$/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^\$([0-9a-f]*),X/i), "$1")
+    value = parseInt(number, 16)
+    return false  if value < 0 or value > 0xffff
+    pushWord value
+    return true
+  if param.match(/^\w+,X$/i)
+    param = param.replace(new RegExp(/,X$/i), "")
+    pushByte opcode
+    if findLabel(param)
+      addr = getLabelPC(param)
+      return false  if addr < 0 or addr > 0xffff
+      pushWord addr
+      return true
+    else
+      pushWord 0x1234
+      return true
+  false
+
+
+checkAbsoluteY = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\$[0-9a-f]{3,4},Y$/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^\$([0-9a-f]*),Y/i), "$1")
+    value = parseInt(number, 16)
+    return false  if value < 0 or value > 0xffff
+    pushWord value
+    return true
+  # it could be a label too..
+  if param.match(/^\w+,Y$/i)
+    param = param.replace(new RegExp(/,Y$/i), "")
+    pushByte opcode
+    if findLabel(param)
+      addr = getLabelPC(param)
+      return false  if addr < 0 or addr > 0xffff
+      pushWord addr
+      return true
+    else
+      pushWord 0x1234
+      return true
+  false
+
+
+checkZeroPageX = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\$[0-9a-f]{1,2},X/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^\$([0-9a-f]{1,2}),X/i), "$1")
+    value = parseInt(number, 16)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  if param.match(/^[0-9]{1,3},X/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^([0-9]{1,3}),X/i), "$1")
+    value = parseInt(number, 10)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  false
+  
+  
+checkZeroPageY = (param, opcode) ->
+  return false  if opcode is 0x00
+  if param.match(/^\$[0-9a-f]{1,2},Y/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^\$([0-9a-f]{1,2}),Y/i), "$1")
+    value = parseInt(number, 16)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  if param.match(/^[0-9]{1,3},Y/i)
+    pushByte opcode
+    number = param.replace(new RegExp(/^([0-9]{1,3}),Y/i), "$1")
+    value = parseInt(number, 10)
+    return false  if value < 0 or value > 255
+    pushByte value
+    return true
+  false
+
+
+checkAbsolute = (param, opcode) ->
+  return false  if opcode is 0x00
+  pushByte opcode
+  if param.match(/^\$[0-9a-f]{3,4}$/i)
+    value = parseInt(param.replace(/^\$/, ""), 16)
+    return false  if value < 0 or value > 0xffff
+    pushWord value
+    return true
+  if param.match(/^[0-9]{1,5}$/i) # Thanks, Matt!
+    value = parseInt(param, 10)
+    return false  if value < 0 or value > 65535
+    pushWord value
+    return (true)
+  # it could be a label too..
+  if param.match(/^\w+$/)
+    if findLabel(param)
+      addr = (getLabelPC(param))
+      return false  if addr < 0 or addr > 0xffff
+      pushWord addr
+      return true
+    else
+      pushWord 0x1234
+      return true
+  false
+
+
+pushByte = (value) ->
+  memory[defaultCodePC] = value & 0xff
+  defaultCodePC++
+  codeLen++
+  return
+  
+pushWord = (value) ->
+  pushByte value & 0xff
+  pushByte (value >> 8) & 0xff
+  return
+  
+  
+getLabelPC = (name) ->
+  i = 0
+  while i < labelIndex.length
+    nameAndAddr = labelIndex[i].split("|")
+    return (nameAndAddr[1])  if name is nameAndAddr[0]
+    i++
+  -1
+
+
+num2hex = (nr) ->
+  str = "0123456789abcdef"
+  hi = ((nr & 0xf0) >> 4)
+  lo = (nr & 15)
+  str.substring(hi, hi + 1) + str.substring(lo, lo + 1)
+
+
+addr2hex = (addr) ->
+  num2hex((addr >> 8) & 0xff) + num2hex(addr & 0xff)
+
+  
+reset = ->
+  x = 0
+  while x < 0x600
+    memory[x] = 0x00
+    x++
+  regA = regX = regY = 0
+  defaultCodePC = regPC = 0x600
+  regSP = 0x100
+  regP = 0x20
+  screen.fillStyle = "#000000"
+  screen.fillRect(0, 0, 512, 512)
+  return
+
+ 
+assemble()
+
+arr = []
+codeStart = 0x600
+while codeStart < memory.length
+  arr.push num2hex(memory[codeStart])
+  codeStart++
+console.log 'Machine code: '+arr.join(' ')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+execute = =>
+  memory[0xfe] = Math.floor(Math.random() * 256)
+  @['i'+num2hex(popByte())]()
+  if (regPC is 0)
+    clearInterval myInterval
+    console.log "Program end at PC=$" + addr2hex(regPC - 1)
+  return
+  
+
+
+@i00 = ->
+  codeRunning = false
+  return
+@i01 = ->
+  addr = popByte() + regX
+  value = memory[addr] + (memory[addr + 1] << 8)
+  regA |= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i05 = ->
+  zp = popByte()
+  regA |= memory[zp]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i06 = ->
+  zp = popByte()
+  value = memory[zp]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  memStoreByte zp, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i08 = ->
+  stackPush regP
+  return
+@i09 = ->
+  regA |= popByte()
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i0a = ->
+  regP = (regP & 0xfe) | ((regA >> 7) & 1)
+  regA = regA << 1
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i0d = ->
+  regA |= memory[popWord()]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i0e = ->
+  addr = popWord()
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 2
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i10 = ->
+  offset = popByte()
+  jumpBranch offset  if (regP & 0x80) is 0
+  return
+@i11 = ->
+  zp = popByte()
+  value = memory[zp] + (memory[zp + 1] << 8) + regY
+  regA |= memory[value]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i15 = ->
+  addr = (popByte() + regX) & 0xff
+  regA |= memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i16 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i18 = ->
+  regP &= 0xfe
+  return
+@i19 = ->
+  addr = popWord() + regY
+  regA |= memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i1d = ->
+  addr = popWord() + regX
+  regA |= memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i1e = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i20 = ->
+  addr = popWord()
+  currAddr = regPC - 1
+  stackPush ((currAddr >> 8) & 0xff)
+  stackPush (currAddr & 0xff)
+  regPC = addr
+  return
+@i21 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr] + (memory[addr + 1] << 8)
+  regA &= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i24 = ->
+  zp = popByte()
+  value = memory[zp]
+  if value & regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  regP = (regP & 0x3f) | (value & 0xc0)
+  return
+@i25 = ->
+  zp = popByte()
+  regA &= memory[zp]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 2
+  if regA & 0x80
+    regP &= 0x80
+  else
+    regP &= 0x7f
+  return
+@i26 = ->
+  sf = (regP & 1)
+  addr = popByte()
+  value = memory[addr] #  & regA;  -- Thanks DMSC ;)
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  value |= sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i28 = ->
+  regP = stackPop() | 0x20
+  return
+@i29 = ->
+  regA &= popByte()
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i2a = ->
+  sf = (regP & 1)
+  regP = (regP & 0xfe) | ((regA >> 7) & 1)
+  regA = regA << 1
+  regA |= sf
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i2c = ->
+  value = memory[popWord()]
+  if value & regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  regP = (regP & 0x3f) | (value & 0xc0)
+  return
+@i2d = ->
+  value = memory[popWord()]
+  regA &= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i2e = ->
+  sf = regP & 1
+  addr = popWord()
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  value |= sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i30 = ->
+  offset = popByte()
+  jumpBranch offset  if regP & 0x80
+  return
+@i31 = ->
+  zp = popByte()
+  value = memory[zp] + (memory[zp + 1] << 8) + regY
+  regA &= memory[value]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i35 = ->
+  zp = popByte()
+  value = memory[zp] + (memory[zp + 1] << 8) + regX
+  regA &= memory[value]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i36 = ->
+  sf = regP & 1
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  value |= sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i38 = ->
+  regP |= 1
+  return
+@i39 = ->
+  addr = popWord() + regY
+  value = memory[addr]
+  regA &= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i3d = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  regA &= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i3e = ->
+  sf = regP & 1
+  addr = popWord() + regX
+  value = memory[addr]
+  regP = (regP & 0xfe) | ((value >> 7) & 1)
+  value = value << 1
+  value |= sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i40 = ->
+@i41 = ->
+  zp = (popByte() + regX) & 0xff
+  value = memory[zp] + (memory[zp + 1] << 8)
+  regA ^= memory[value]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i45 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regA ^= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i46 = ->
+  addr = popByte() & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  memStoreByte addr, value
+  unless value is 0
+    regP &= 0xfd
+  else
+    regP |= 2
+  if (value & 0x80) is 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i48 = ->
+  stackPush regA
+  return
+@i49 = ->
+  regA ^= popByte()
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i4a = ->
+  regP = (regP & 0xfe) | (regA & 1)
+  regA = regA >> 1
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i4c = ->
+  regPC = popWord()
+  return
+@i4d = ->
+  addr = popWord()
+  value = memory[addr]
+  regA ^= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i4e = ->
+  addr = popWord()
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i50 = ->
+  offset = popByte()
+  jumpBranch offset  if (regP & 0x40) is 0
+  return
+@i51 = ->
+  zp = popByte()
+  value = memory[zp] + (memory[zp + 1] << 8) + regY
+  regA ^= memory[value]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i55 = ->
+  addr = (popByte() + regX) & 0xff
+  regA ^= memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i56 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i58 = ->
+@i59 = ->
+  addr = popWord() + regY
+  value = memory[addr]
+  regA ^= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i5d = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  regA ^= value
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i5e = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i60 = ->
+  regPC = (stackPop() + 1) | (stackPop() << 8)
+  return
+@i61 = ->
+  zp = (popByte() + regX) & 0xff
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  value = memory[addr]
+  testADC value
+  return
+@i65 = ->
+  addr = popByte()
+  value = memory[addr]
+  testADC value
+  return
+@i66 = ->
+  sf = regP & 1
+  addr = popByte()
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  value |= 0x80  if sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i68 = ->
+  regA = stackPop()
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i69 = ->
+  value = popByte()
+  testADC value
+  return
+@i6a = ->
+  sf = regP & 1
+  regP = (regP & 0xfe) | (regA & 1)
+  regA = regA >> 1
+  regA |= 0x80  if sf
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i6c = ->
+@i6d = ->
+  addr = popWord()
+  value = memory[addr]
+  testADC value
+  return
+@i6e = ->
+  sf = regP & 1
+  addr = popWord()
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  value |= 0x80  if sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i70 = ->
+  offset = popByte()
+  jumpBranch offset  if regP & 0x40
+  return
+@i71 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  value = memory[addr + regY]
+  testADC value
+  return
+@i75 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  testADC value
+  return
+@i76 = ->
+  sf = (regP & 1)
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  value |= 0x80  if sf
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i78 = ->
+@i79 = ->
+  addr = popWord()
+  value = memory[addr + regY]
+  testADC value
+  return
+@i7d = ->
+  addr = popWord()
+  value = memory[addr + regX]
+  testADC value
+  return
+@i7e = ->
+  sf = regP & 1
+  addr = popWord() + regX
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  value = value >> 1
+  value |= 0x80  if value
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i81 = ->
+  zp = (popByte() + regX) & 0xff
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  memStoreByte addr, regA
+  return
+@i84 = ->
+  memStoreByte popByte(), regY
+  return
+@i85 = ->
+  memStoreByte popByte(), regA
+  return
+@i86 = ->
+  memStoreByte popByte(), regX
+  return
+@i88 = ->
+  regY = (regY - 1) & 0xff
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i8a = ->
+  regA = regX & 0xff
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i8c = ->
+  memStoreByte popWord(), regY
+  return
+@i8d = ->
+  memStoreByte popWord(), regA
+  return
+@i8e = ->
+  memStoreByte popWord(), regX
+  return
+@i90 = ->
+  offset = popByte()
+  jumpBranch offset  if (regP & 1) is 0
+  return
+@i91 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8) + regY
+  memStoreByte addr, regA
+  return
+@i94 = ->
+  memStoreByte popByte() + regX, regY
+  return
+@i95 = ->
+  memStoreByte popByte() + regX, regA
+  return
+@i96 = ->
+  memStoreByte popByte() + regY, regX
+  return
+@i98 = ->
+  regA = regY & 0xff
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@i99 = ->
+  memStoreByte popWord() + regY, regA
+  return
+@i9a = ->
+  regSP = regX & 0xff
+  return
+@i9d = ->
+  addr = popWord()
+  memStoreByte addr + regX, regA
+  return
+@ia0 = ->
+  regY = popByte()
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia1 = ->
+  zp = (popByte() + regX) & 0xff
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  regA = memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia2 = ->
+  regX = popByte()
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia4 = ->
+  regY = memory[popByte()]
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia5 = ->
+  regA = memory[popByte()]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia6 = ->
+  regX = memory[popByte()]
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia8 = ->
+  regY = regA & 0xff
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ia9 = ->
+  regA = popByte()
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@iaa = ->
+  regX = regA & 0xff
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@iac = ->
+  regY = memory[popWord()]
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@iad = ->
+  regA = memory[popWord()]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@iae = ->
+  regX = memory[popWord()]
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ib0 = ->
+  offset = popByte()
+  jumpBranch offset  if regP & 1
+  return
+@ib1 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8) + regY
+  regA = memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ib4 = ->
+  regY = memory[popByte() + regX]
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ib5 = ->
+  regA = memory[(popByte() + regX) & 0xff]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ib6 = ->
+  regX = memory[popByte() + regY]
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ib8 = ->
+  regP &= 0xbf
+  return
+@ib9 = ->
+  addr = popWord() + regY
+  regA = memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@iba = ->
+  regX = regSP & 0xff
+  return
+@ibc = ->
+  addr = popWord() + regX
+  regY = memory[addr]
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ibd = ->
+  addr = popWord() + regX
+  regA = memory[addr]
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ibe = ->
+  addr = popWord() + regY
+  regX = memory[addr]
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ic0 = ->
+  value = popByte()
+  if (regY + value) > 0xff
+    regP |= 1
+  else
+    regP &= 0xfe
+  ov = value
+  value = (regY - value)
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ic1 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8) + regY
+  value = memory[addr]
+  doCompare regA, value
+  return
+@ic4 = ->
+  value = memory[popByte()]
+  doCompare regY, value
+  return
+@ic5 = ->
+  value = memory[popByte()]
+  doCompare regA, value
+  return
+@ic6 = ->
+  zp = popByte()
+  value = memory[zp]
+  --value
+  memStoreByte zp, value & 0xff
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ic8 = ->
+  regY = (regY + 1) & 0xff
+  if regY
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regY & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ic9 = ->
+  value = popByte()
+  doCompare regA, value
+  return
+@ica = ->
+  regX = (regX - 1) & 0xff
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@icc = ->
+  value = memory[popWord()]
+  doCompare regY, value
+  return
+@icd = ->
+  value = memory[popWord()]
+  doCompare regA, value
+  return
+@ice = ->
+  addr = popWord()
+  value = memory[addr]
+  --value
+  value = value & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@id0 = ->
+  offset = popByte()
+  jumpBranch offset  if (regP & 2) is 0
+  return
+@id1 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8) + regY
+  value = memory[addr]
+  doCompare regA, value
+  return
+@id5 = ->
+  value = memory[popByte() + regX]
+  doCompare regA, value
+  return
+@id6 = ->
+  addr = popByte() + regX
+  value = memory[addr]
+  --value
+  value = value & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@id8 = ->
+  regP &= 0xf7
+  return
+@id9 = ->
+  addr = popWord() + regY
+  value = memory[addr]
+  doCompare regA, value
+  return
+@idd = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  doCompare regA, value
+  return
+@ide = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  --value
+  value = value & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ie0 = ->
+  value = popByte()
+  doCompare regX, value
+  return
+@ie1 = ->
+  zp = (popByte() + regX) & 0xff
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  value = memory[addr]
+  testSBC value
+  return
+@ie4 = ->
+  value = memory[popByte()]
+  doCompare regX, value
+  return
+@ie5 = ->
+  addr = popByte()
+  value = memory[addr]
+  testSBC value
+  return
+@ie6 = ->
+  zp = popByte()
+  value = memory[zp]
+  ++value
+  value = (value) & 0xff
+  memStoreByte zp, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ie8 = ->
+  regX = (regX + 1) & 0xff
+  if regX
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regX & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ie9 = ->
+  value = popByte()
+  testSBC value
+  return
+@iea = ->
+@iec = ->
+  value = memory[popWord()]
+  doCompare regX, value
+  return
+@ied = ->
+  addr = popWord()
+  value = memory[addr]
+  testSBC value
+  return
+@iee = ->
+  addr = popWord()
+  value = memory[addr]
+  ++value
+  value = (value) & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@if0 = ->
+  offset = popByte()
+  jumpBranch offset  if regP & 2
+  return
+@if1 = ->
+  zp = popByte()
+  addr = memory[zp] + (memory[zp + 1] << 8)
+  value = memory[addr + regY]
+  testSBC value
+  return
+@if5 = ->
+  addr = (popByte() + regX) & 0xff
+  value = memory[addr]
+  regP = (regP & 0xfe) | (value & 1)
+  testSBC value
+  return
+@if6 = ->
+  addr = popByte() + regX
+  value = memory[addr]
+  ++value
+  value = value & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@if8 = ->
+  regP |= 8
+  return
+@if9 = ->
+  addr = popWord()
+  value = memory[addr + regY]
+  testSBC value
+  return
+@ifd = ->
+  addr = popWord()
+  value = memory[addr + regX]
+  testSBC value
+  return
+@ife = ->
+  addr = popWord() + regX
+  value = memory[addr]
+  ++value
+  value = value & 0xff
+  memStoreByte addr, value
+  if value
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if value & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+@ierr = ->
+  message "Address $" + addr2hex(regPC) + " - unknown opcode " + opcode
+  codeRunning = false
+  return
+
+
+testADC = (value) ->
+  if (regA ^ value) & 0x80
+    regP &= 0xbf
+  else
+    regP |= 0x40
+  if regP & 8
+    tmp = (regA & 0xf) + (value & 0xf) + (regP & 1)
+    tmp = 0x10 | ((tmp + 6) & 0xf)  if tmp >= 10
+    tmp += (regA & 0xf0) + (value & 0xf0)
+    if tmp >= 160
+      regP |= 1
+      regP &= 0xbf  if (regP & 0xbf) and tmp >= 0x180
+      tmp += 0x60
+    else
+      regP &= 0xfe
+      regP &= 0xbf  if (regP & 0xbf) and tmp < 0x80
+  else
+    tmp = regA + value + (regP & 1)
+    if tmp >= 0x100
+      regP |= 1
+      regP &= 0xbf  if (regP & 0xbf) and tmp >= 0x180
+    else
+      regP &= 0xfe
+      regP &= 0xbf  if (regP & 0xbf) and tmp < 0x80
+  regA = tmp & 0xff
+  if regA
+    regP &= 0xfd
+  else
+    regP |= 0x02
+  if regA & 0x80
+    regP |= 0x80
+  else
+    regP &= 0x7f
+  return
+  
+
+popByte = -> 
+  #console.log('i'+num2hex(memory[regPC] & 0xff))
+  memory[regPC++] & 0xff
+  
+
+popWord = ->
+  popByte() + (popByte() << 8)
+
+
+stackPush = (value) ->
+  if regSP >= 0
+    regSP--
+    memory[(regSP & 0xff) + 0x100] = value & 0xff
+  else
+    message "Stack full: " + regSP
+    codeRunning = false
+  return
+  
+  
+stackPop = ->
+  if regSP < 0x100
+    value = memory[regSP + 0x100]
+    regSP++
+    value
+  else
+    message "Stack empty"
+    codeRunning = false
+    0
+    
+  
+memStoreByte = (addr, value) ->
+  memory[addr] = (value & 0xff)
+  if (addr >= 0x200) and (addr <= 0x5ff)
+    screen.fillStyle = palette[memory[addr] & 0x0f]
+    addr2 = addr - 0x200
+    y = (addr2>>5)<<4
+    x = (addr2&0x1f)<<4
+    #console.log(x+','+y+','+palette[memory[addr] & 0x0f])
+    screen.fillRect(x, y, 16, 16)
+  return
+  
+
+myInterval = setInterval execute,1
+
+
+$(document).keyup (e) =>
+  if e.keyCode is 27
+    clearInterval myInterval 
+
+</script>
+
+
+<script type="text/coffeescript">
+console.log CoffeeScript.compile(document.all.coffee.text)
+</script>
